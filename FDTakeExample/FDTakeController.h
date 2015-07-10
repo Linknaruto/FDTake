@@ -26,7 +26,7 @@
 /**
  * Delegate method after the user has successfully taken or selected a photo
  */
-- (void)takeController:(FDTakeController *)controller gotPhoto:(UIImage *)photo withInfo:(NSDictionary *)info;
+- (void)takeController:(FDTakeController *)controller gotPhotos:(NSArray *)photos withInfo:(NSDictionary *)info;
 
 /**
  * Delegate method after the user has successfully taken or selected a video

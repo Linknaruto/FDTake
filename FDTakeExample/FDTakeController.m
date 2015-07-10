@@ -7,6 +7,8 @@
 //
 
 #import "FDTakeController.h"
+#import "QBImagePickerController.h"
+
 #import <MobileCoreServices/MobileCoreServices.h>
 
 #define kPhotosActionSheetTag 1
@@ -22,12 +24,13 @@ static NSString * const kCancelKey = @"cancel";
 static NSString * const kNoSourcesKey = @"noSources";
 static NSString * const kStringsTableName = @"FDTake";
 
-@interface FDTakeController() <UIActionSheetDelegate, UIAlertViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate>
+@interface FDTakeController() <UIActionSheetDelegate, UIAlertViewDelegate, UIImagePickerControllerDelegate, UINavigationControllerDelegate, QBImagePickerControllerDelegate>
 @property (strong, nonatomic) NSMutableArray *sources;
 @property (strong, nonatomic) NSMutableArray *buttonTitles;
 @property (strong, nonatomic) UIActionSheet *actionSheet;
 @property (strong, nonatomic) UIPopoverController *popover;
-@property (strong, nonatomic) UIImagePickerController *imagePicker;
+@property (strong, nonatomic) QBImagePickerController *imagePicker;
+@property (strong, nonatomic) UIImagePickerController *imagePickerPhotoTake;
 
 // Returns either optional view control for presenting or main window
 - (UIViewController*)presentingViewController;
@@ -66,15 +69,26 @@ static NSString * const kStringsTableName = @"FDTake";
     return _popOverPresentRect;
 }
 
-- (UIImagePickerController *)imagePicker
+- (UIImagePickerController *)imagePickerPhotoTake
+{
+    if (!_imagePickerPhotoTake) {
+        _imagePickerPhotoTake = [[UIImagePickerController alloc] init];
+        _imagePickerPhotoTake.delegate = self;
+        _imagePickerPhotoTake.sourceType = UIImagePickerControllerSourceTypeCamera;
+    }
+    return _imagePickerPhotoTake;
+}
+
+- (QBImagePickerController *)imagePicker
 {
     if (!_imagePicker) {
-        _imagePicker = [[UIImagePickerController alloc] init];
+        _imagePicker = [[QBImagePickerController alloc] init];
         _imagePicker.delegate = self;
-        _imagePicker.allowsEditing = YES;
+        _imagePicker.allowsMultipleSelection = YES;
     }
     return _imagePicker;
 }
+
 
 - (UIPopoverController *)popover
 {
@@ -84,6 +98,7 @@ static NSString * const kStringsTableName = @"FDTake";
 
 - (void)takePhotoOrChooseFromLibrary
 {
+
     self.sources = nil;
     self.buttonTitles = nil;
     if ([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera]) {
@@ -152,37 +167,45 @@ static NSString * const kStringsTableName = @"FDTake";
         if ([self.delegate respondsToSelector:@selector(takeController:didCancelAfterAttempting:)])
             [self.delegate takeController:self didCancelAfterAttempting:NO];
     } else {
-        self.imagePicker.sourceType = [(self.sources)[buttonIndex] integerValue];
+        NSInteger sourceType = [(self.sources)[buttonIndex] integerValue];
         
-        if ((self.imagePicker.sourceType==UIImagePickerControllerSourceTypeCamera) || (self.imagePicker.sourceType==UIImagePickerControllerSourceTypeCamera)) {
-            if (self.defaultToFrontCamera && [UIImagePickerController isCameraDeviceAvailable:UIImagePickerControllerCameraDeviceFront]) {
-                [self.imagePicker setCameraDevice:UIImagePickerControllerCameraDeviceFront];
-            }
-        }
+
+        UIViewController *controllerToPresent = sourceType == UIImagePickerControllerSourceTypeCamera ? self.imagePickerPhotoTake
+                                                                                                      : self.imagePicker;
+
+//        if ((self.imagePicker.sourceType==UIImagePickerControllerSourceTypeCamera) || (self.imagePicker.sourceType==UIImagePickerControllerSourceTypeCamera)) {
+//            if (self.defaultToFrontCamera && [UIImagePickerController isCameraDeviceAvailable:UIImagePickerControllerCameraDeviceFront]) {
+//                [self.imagePickerPhotoTake setCameraDevice:UIImagePickerControllerCameraDeviceFront];
+//            }
+//        }
         // set the media type: photo or video
-        if (actionSheet.tag == kPhotosActionSheetTag) {
-            self.imagePicker.allowsEditing = self.allowsEditingPhoto;
-            self.imagePicker.mediaTypes = @[(NSString *) kUTTypeImage];
-        } else if (actionSheet.tag == kVideosActionSheetTag) {
-            self.imagePicker.allowsEditing = self.allowsEditingVideo;
-            self.imagePicker.mediaTypes = @[(NSString *) kUTTypeMovie];
-        } else if (actionSheet.tag == kVideosOrPhotosActionSheetTag) {
-            if ([self.sources count] == 1) {
-                if (buttonIndex == 0) {
-                    self.imagePicker.mediaTypes = @[(NSString *)kUTTypeImage, (NSString *)kUTTypeMovie];
-                }
-            } else {
-                if (buttonIndex == 0) {
-                    self.imagePicker.allowsEditing = self.allowsEditingPhoto;
-                    self.imagePicker.mediaTypes = @[(NSString *)kUTTypeImage];
-                } else if (buttonIndex == 1) {
-                    self.imagePicker.allowsEditing = self.allowsEditingVideo;
-                    self.imagePicker.mediaTypes = @[(NSString *)kUTTypeMovie];
-                } else if (buttonIndex == 2) {
-                    self.imagePicker.mediaTypes = @[(NSString *)kUTTypeImage, (NSString *)kUTTypeMovie];
+        
+        if (sourceType == UIImagePickerControllerSourceTypeCamera) {            
+            if (actionSheet.tag == kPhotosActionSheetTag) {
+                self.imagePickerPhotoTake.allowsEditing = self.allowsEditingPhoto;
+                self.imagePickerPhotoTake.mediaTypes = @[(NSString *) kUTTypeImage];
+            } else if (actionSheet.tag == kVideosActionSheetTag) {
+                self.imagePickerPhotoTake.allowsEditing = self.allowsEditingVideo;
+                self.imagePickerPhotoTake.mediaTypes = @[(NSString *) kUTTypeMovie];
+            } else if (actionSheet.tag == kVideosOrPhotosActionSheetTag) {
+                if ([self.sources count] == 1) {
+                    if (buttonIndex == 0) {
+                        self.imagePickerPhotoTake.mediaTypes = @[(NSString *)kUTTypeImage, (NSString *)kUTTypeMovie];
+                    }
+                } else {
+                    if (buttonIndex == 0) {
+                        self.imagePickerPhotoTake.allowsEditing = self.allowsEditingPhoto;
+                        self.imagePickerPhotoTake.mediaTypes = @[(NSString *)kUTTypeImage];
+                    } else if (buttonIndex == 1) {
+                        self.imagePickerPhotoTake.allowsEditing = self.allowsEditingVideo;
+                        self.imagePickerPhotoTake.mediaTypes = @[(NSString *)kUTTypeMovie];
+                    } else if (buttonIndex == 2) {
+                        self.imagePickerPhotoTake.mediaTypes = @[(NSString *)kUTTypeImage, (NSString *)kUTTypeMovie];
+                    }
                 }
             }
         }
+        
         
         // On iPad use pop-overs.
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
@@ -193,7 +216,7 @@ static NSString * const kStringsTableName = @"FDTake";
         }
         else {
             // On iPhone use full screen presentation.
-            [[self presentingViewController] presentViewController:self.imagePicker animated:YES completion:nil];
+            [[self presentingViewController] presentViewController:controllerToPresent animated:YES completion:nil];
         }
     }
 }
@@ -207,6 +230,54 @@ static NSString * const kStringsTableName = @"FDTake";
 }
 
 #pragma mark - UIImagePickerControllerDelegate
+
+- (void)qb_imagePickerController:(QBImagePickerController *)imagePickerController didSelectAsset:(ALAsset *)asset {
+}
+
+
+- (UIImage*) imageForAsset:(ALAsset*) aAsset{
+    
+    ALAssetRepresentation *rep;
+    
+    rep = [aAsset defaultRepresentation];
+    
+    return [UIImage imageWithCGImage:[rep fullResolutionImage]];
+}
+
+
+- (void)qb_imagePickerController:(QBImagePickerController *)imagePickerController didSelectAssets:(NSArray *)assets {
+    [[UIApplication sharedApplication] setStatusBarHidden:YES];
+    
+    NSMutableArray *images = [[NSMutableArray alloc] init];
+    
+    for (ALAsset *asset in assets) {
+        [images addObject:[self imageForAsset:asset]];
+    }
+    
+    
+    if ([self.delegate respondsToSelector:@selector(takeController:gotPhotos:withInfo:)]) {
+        [self.delegate takeController:self gotPhotos:images withInfo:nil];
+    }
+    
+    if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+        [self.popover dismissPopoverAnimated:YES];
+    }
+    // Handle a movie capture
+
+    [imagePickerController dismissViewControllerAnimated:YES completion:nil];
+    self.imagePicker = nil;
+
+}
+
+- (void)qb_imagePickerControllerDidCancel:(QBImagePickerController *)imagePickerController {
+    [[UIApplication sharedApplication] setStatusBarHidden:YES];
+    [imagePickerController dismissViewControllerAnimated:YES completion:nil];
+    self.imagePicker = nil;
+    
+    if ([self.delegate respondsToSelector:@selector(takeController:didCancelAfterAttempting:)]) {
+        [self.delegate takeController:self didCancelAfterAttempting:YES];
+    }
+}
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info
 {
@@ -233,8 +304,8 @@ static NSString * const kStringsTableName = @"FDTake";
             return;
         }
         
-        if ([self.delegate respondsToSelector:@selector(takeController:gotPhoto:withInfo:)])
-            [self.delegate takeController:self gotPhoto:imageToSave withInfo:info];
+        if ([self.delegate respondsToSelector:@selector(takeController:gotPhotos:withInfo:)])
+            [self.delegate takeController:self gotPhotos:@[imageToSave] withInfo:info];
         
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)
             [self.popover dismissPopoverAnimated:YES];
