@@ -236,14 +236,9 @@ static NSString * const kStringsTableName = @"FDTake";
 
 
 - (UIImage*) imageForAsset:(ALAsset*) aAsset{
-    
-    ALAssetRepresentation *rep;
-    
-    rep = [aAsset defaultRepresentation];
-    
-    return [UIImage imageWithCGImage:[rep fullResolutionImage]];
+    ALAssetRepresentation *rep = [aAsset defaultRepresentation];
+    return [UIImage imageWithCGImage:[rep fullResolutionImage] scale:1.0f orientation:(UIImageOrientation)[rep orientation]];
 }
-
 
 - (void)qb_imagePickerController:(QBImagePickerController *)imagePickerController didSelectAssets:(NSArray *)assets {
     [[UIApplication sharedApplication] setStatusBarHidden:YES];
