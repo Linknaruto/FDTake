@@ -236,8 +236,12 @@ static NSString * const kStringsTableName = @"FDTake";
 
 
 - (UIImage*) imageForAsset:(ALAsset*) aAsset{
-    ALAssetRepresentation *rep = [aAsset defaultRepresentation];
-    return [UIImage imageWithCGImage:[rep fullResolutionImage] scale:1.0f orientation:(UIImageOrientation)[rep orientation]];
+    @autoreleasepool {
+        ALAssetRepresentation *rep = [aAsset defaultRepresentation];
+        UIImageOrientation oriantation = (UIImageOrientation)[rep orientation];
+        CGImageRef imgRef = [rep fullResolutionImage];
+        return [UIImage imageWithCGImage:imgRef scale:1.0f orientation:oriantation];
+    }
 }
 
 - (void)qb_imagePickerController:(QBImagePickerController *)imagePickerController didSelectAssets:(NSArray *)assets {
