@@ -107,4 +107,9 @@
  */
 @property (nonatomic, copy) NSString *noSourcesText;
 
+/**
+ * Maximum number of selection
+ */
+@property (nonatomic, assign) NSUInteger maximumNumberOfSelection;
+
 @end

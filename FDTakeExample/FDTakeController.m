@@ -89,6 +89,10 @@ static NSString * const kStringsTableName = @"FDTake";
     return _imagePicker;
 }
 
+- (void)setMaximumNumberOfSelection:(NSUInteger)maximumNumberOfSelection {
+    _maximumNumberOfSelection = maximumNumberOfSelection;
+    self.imagePicker.maximumNumberOfSelection = _maximumNumberOfSelection;
+}
 
 - (UIPopoverController *)popover
 {
