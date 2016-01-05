@@ -204,10 +204,16 @@ static NSString * const kStringsTableName = @"FDTake";
             
             AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
             if (authStatus == AVAuthorizationStatusRestricted || authStatus == AVAuthorizationStatusDenied) {
-                if (floor(NSFoundationVersionNumber) >= NSFoundationVersionNumber_iOS_8_0) {
-                    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"" message:@"Vennligst gå til Innstillinger-appen og tillat bruk av bildebiblioteket" preferredStyle:UIAlertControllerStyleAlert];
-                    UIAlertAction *dismissAction = [UIAlertAction actionWithTitle:@"Avbryt" style:UIAlertActionStyleDefault handler:nil];
-                    UIAlertAction *settingAction = [UIAlertAction actionWithTitle:@"Innstillinger" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                
+                
+                NSString *title = FDLOCALIZATION(@"cameraPermissionAlertTitle", @"Please go to Settings app and allow the use of camera");
+                NSString *cancel = FDLOCALIZATION(@"cancel", @"Cancel");
+                NSString *settings = FDLOCALIZATION(@"settings", @"Settings");
+                
+                if ([[[UIDevice currentDevice] systemVersion] compare:@"8.0" options:NSNumericSearch] == NSOrderedDescending) {
+                    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title message:@"" preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *dismissAction = [UIAlertAction actionWithTitle:cancel style:UIAlertActionStyleDefault handler:nil];
+                    UIAlertAction *settingAction = [UIAlertAction actionWithTitle:settings style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                         dispatch_async(dispatch_get_main_queue(), ^{
                             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
                         });
@@ -217,7 +223,7 @@ static NSString * const kStringsTableName = @"FDTake";
                     [[self presentingViewController] presentViewController:alertController animated:YES completion:nil];
                 }
                 else {
-                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"" message:@"Vennligst gå til Innstillinger-appen og tillat bruk av bildebiblioteket" delegate:nil cancelButtonTitle:@"Avbryt" otherButtonTitles:@"", nil];
+                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:@"" delegate:nil cancelButtonTitle:cancel otherButtonTitles:@"", nil];
                     [alertView show];
                 }
             }
@@ -267,20 +273,26 @@ static NSString * const kStringsTableName = @"FDTake";
             ALAuthorizationStatus authorizationStatus = [ALAssetsLibrary authorizationStatus];
             if (authorizationStatus == ALAuthorizationStatusRestricted || authorizationStatus == ALAuthorizationStatusDenied) {
                 
-                if (floor(NSFoundationVersionNumber) >= NSFoundationVersionNumber_iOS_8_0) {
-                    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:@"" message:@"Vennligst gå til Innstillinger-appen og tillat bruk av bildebiblioteket" preferredStyle:UIAlertControllerStyleAlert];
-                    UIAlertAction *dismissAction = [UIAlertAction actionWithTitle:@"Avbryt" style:UIAlertActionStyleDefault handler:nil];
-                    UIAlertAction *settingAction = [UIAlertAction actionWithTitle:@"Innstillinger" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                NSString *title = FDLOCALIZATION(@"photoLibraryPermissionAlertTitle", @"Please go to Settings app and allow the use of photo library");
+                NSString *cancel = FDLOCALIZATION(@"cancel", @"Cancel");
+                NSString *settings = FDLOCALIZATION(@"settings", @"Settings");
+                
+                if ([[[UIDevice currentDevice] systemVersion] compare:@"8.0" options:NSNumericSearch] == NSOrderedDescending) {
+                    
+                    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title message:@"" preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *dismissAction = [UIAlertAction actionWithTitle:cancel style:UIAlertActionStyleDefault handler:nil];
+                    UIAlertAction *settingAction = [UIAlertAction actionWithTitle:settings style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                         dispatch_async(dispatch_get_main_queue(), ^{
                             [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
                         });
                     }];
                     [alertController addAction:settingAction];
                     [alertController addAction:dismissAction];
+                    
                     [[self presentingViewController] presentViewController:alertController animated:YES completion:nil];
                 }
                 else {
-                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"" message:@"Vennligst gå til Innstillinger-appen og tillat bruk av bildebiblioteket" delegate:nil cancelButtonTitle:@"Avbryt" otherButtonTitles:@"", nil];
+                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:@"" delegate:nil cancelButtonTitle:cancel otherButtonTitles:@"", nil];
                     [alertView show];
                 }
                 
