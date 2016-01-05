@@ -8,6 +8,7 @@
 
 #import "FDTakeController.h"
 #import "QBImagePickerController.h"
+#import <AVFoundation/AVFoundation.h>
 
 #import <MobileCoreServices/MobileCoreServices.h>
 
@@ -173,18 +174,10 @@ static NSString * const kStringsTableName = @"FDTake";
     } else {
         NSInteger sourceType = [(self.sources)[buttonIndex] integerValue];
         
-
-        UIViewController *controllerToPresent = sourceType == UIImagePickerControllerSourceTypeCamera ? self.imagePickerPhotoTake
-                                                                                                      : self.imagePicker;
-
-//        if ((self.imagePicker.sourceType==UIImagePickerControllerSourceTypeCamera) || (self.imagePicker.sourceType==UIImagePickerControllerSourceTypeCamera)) {
-//            if (self.defaultToFrontCamera && [UIImagePickerController isCameraDeviceAvailable:UIImagePickerControllerCameraDeviceFront]) {
-//                [self.imagePickerPhotoTake setCameraDevice:UIImagePickerControllerCameraDeviceFront];
-//            }
-//        }
-        // set the media type: photo or video
         
-        if (sourceType == UIImagePickerControllerSourceTypeCamera) {            
+        UIViewController *controllerToPresent = sourceType == UIImagePickerControllerSourceTypeCamera ? self.imagePickerPhotoTake : self.imagePicker;
+        
+        if (sourceType == UIImagePickerControllerSourceTypeCamera) {
             if (actionSheet.tag == kPhotosActionSheetTag) {
                 self.imagePickerPhotoTake.allowsEditing = self.allowsEditingPhoto;
                 self.imagePickerPhotoTake.mediaTypes = @[(NSString *) kUTTypeImage];
@@ -208,19 +201,115 @@ static NSString * const kStringsTableName = @"FDTake";
                     }
                 }
             }
-        }
-        
-        
-        // On iPad use pop-overs.
-        if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-            [self.popover presentPopoverFromRect:self.popOverPresentRect
-                                          inView:aViewController.view
-                        permittedArrowDirections:UIPopoverArrowDirectionAny
-                                        animated:YES];
+            
+            AVAuthorizationStatus authStatus = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+            if (authStatus == AVAuthorizationStatusRestricted || authStatus == AVAuthorizationStatusDenied) {
+                
+                
+                NSString *title = FDLOCALIZATION(@"cameraPermissionAlertTitle", @"Please go to Settings app and allow the use of camera");
+                NSString *cancel = FDLOCALIZATION(@"cancel", @"Cancel");
+                NSString *settings = FDLOCALIZATION(@"settings", @"Settings");
+                
+                if ([[[UIDevice currentDevice] systemVersion] compare:@"8.0" options:NSNumericSearch] == NSOrderedDescending) {
+                    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title message:@"" preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *dismissAction = [UIAlertAction actionWithTitle:cancel style:UIAlertActionStyleDefault handler:nil];
+                    UIAlertAction *settingAction = [UIAlertAction actionWithTitle:settings style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+                        });
+                    }];
+                    [alertController addAction:settingAction];
+                    [alertController addAction:dismissAction];
+                    [[self presentingViewController] presentViewController:alertController animated:YES completion:nil];
+                }
+                else {
+                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:@"" delegate:nil cancelButtonTitle:cancel otherButtonTitles:@"", nil];
+                    [alertView show];
+                }
+            }
+            else if (authStatus == AVAuthorizationStatusAuthorized) {
+                // On iPad use pop-overs.
+                if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+                    [self.popover presentPopoverFromRect:self.popOverPresentRect
+                                                  inView:aViewController.view
+                                permittedArrowDirections:UIPopoverArrowDirectionAny
+                                                animated:YES];
+                }
+                else {
+                    // On iPhone use full screen presentation.
+                    [[self presentingViewController] presentViewController:controllerToPresent animated:YES completion:nil];
+                }
+            }
+            else if (authStatus == AVAuthorizationStatusNotDetermined) {
+                
+                [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL granted) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if(granted){
+                            // On iPad use pop-overs.
+                            if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+                                [self.popover presentPopoverFromRect:self.popOverPresentRect
+                                                              inView:aViewController.view
+                                            permittedArrowDirections:UIPopoverArrowDirectionAny
+                                                            animated:YES];
+                            }
+                            else {
+                                // On iPhone use full screen presentation.
+                                [[self presentingViewController] presentViewController:controllerToPresent animated:YES completion:nil];
+                            }
+                        }
+                        else {
+                            // UI updates as needed
+                            NSLog(@"Not granted access to %@", AVMediaTypeVideo);
+                        }
+                    });
+                }];
+            }
+            
+            else {
+                NSLog(@"Unknown authorization status");
+            }
         }
         else {
-            // On iPhone use full screen presentation.
-            [[self presentingViewController] presentViewController:controllerToPresent animated:YES completion:nil];
+            ALAuthorizationStatus authorizationStatus = [ALAssetsLibrary authorizationStatus];
+            if (authorizationStatus == ALAuthorizationStatusRestricted || authorizationStatus == ALAuthorizationStatusDenied) {
+                
+                NSString *title = FDLOCALIZATION(@"photoLibraryPermissionAlertTitle", @"Please go to Settings app and allow the use of photo library");
+                NSString *cancel = FDLOCALIZATION(@"cancel", @"Cancel");
+                NSString *settings = FDLOCALIZATION(@"settings", @"Settings");
+                
+                if ([[[UIDevice currentDevice] systemVersion] compare:@"8.0" options:NSNumericSearch] == NSOrderedDescending) {
+                    
+                    UIAlertController *alertController = [UIAlertController alertControllerWithTitle:title message:@"" preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertAction *dismissAction = [UIAlertAction actionWithTitle:cancel style:UIAlertActionStyleDefault handler:nil];
+                    UIAlertAction *settingAction = [UIAlertAction actionWithTitle:settings style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [[UIApplication sharedApplication] openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString]];
+                        });
+                    }];
+                    [alertController addAction:settingAction];
+                    [alertController addAction:dismissAction];
+                    
+                    [[self presentingViewController] presentViewController:alertController animated:YES completion:nil];
+                }
+                else {
+                    UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:title message:@"" delegate:nil cancelButtonTitle:cancel otherButtonTitles:@"", nil];
+                    [alertView show];
+                }
+                
+            }
+            else if (authorizationStatus == ALAuthorizationStatusAuthorized || authorizationStatus == ALAuthorizationStatusNotDetermined) {
+                // On iPad use pop-overs.
+                if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+                    [self.popover presentPopoverFromRect:self.popOverPresentRect
+                                                  inView:aViewController.view
+                                permittedArrowDirections:UIPopoverArrowDirectionAny
+                                                animated:YES];
+                }
+                else {
+                    // On iPhone use full screen presentation.
+                    [[self presentingViewController] presentViewController:controllerToPresent animated:YES completion:nil];
+                }
+            }
         }
     }
 }
