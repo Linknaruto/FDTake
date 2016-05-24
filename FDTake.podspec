@@ -16,6 +16,5 @@ Pod::Spec.new do |s|
     'FDTakeResources' => ['FDTakeExample/*.lproj']
   }
   s.requires_arc = true
-  s.dependency 'QBImagePickerController', '~> 2.5.2'
 
 end
